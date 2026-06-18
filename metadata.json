@@ -1,0 +1,6 @@
+{
+  "name": "Amtawa",
+  "description": "HealthTech & FinTech SaaS MVP featuring AI Medical Parsing, Barcode scanning, and Budget-Optimized Meal Generation.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
