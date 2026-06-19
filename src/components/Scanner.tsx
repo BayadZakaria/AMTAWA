@@ -134,7 +134,9 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           barcode: barcodeToScan,
-          userAllergies: medicalProfile.allergies
+          userAllergies: medicalProfile.allergies,
+          userId: user.id,
+          language: language
         })
       });
 
@@ -285,10 +287,10 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
   };
 
   const getAdditivesImpact = (count: number) => {
-    if (count === 0) return { label: 'No additives', color: 'text-[#038141]', bg: 'bg-green-50', border: 'border-green-200' };
-    if (count <= 2) return { label: 'Low additives impact', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' };
-    if (count <= 4) return { label: 'Moderate impact', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' };
-    return { label: 'High additives impact', color: 'text-[#E63E11]', bg: 'bg-red-50', border: 'border-red-200' };
+    if (count === 0) return { label: language === 'fr' ? 'Aucun additif' : language === 'ar' ? 'بدون إضافات' : language === 'tzm' ? 'ⵡⴰⵍⵓ ⵉⵙⵎⴰⵜⵜⴰⵢⵏ' : 'No additives', color: 'text-[#038141]', bg: 'bg-green-50', border: 'border-green-200' };
+    if (count <= 2) return { label: language === 'fr' ? 'Impact faible' : language === 'ar' ? 'تأثير ضعيف' : language === 'tzm' ? 'ⵉⵎⵉⴽⴽ ⵏ ⵓⵙⵎⴰⵜⵜⴰⵢ' : 'Low additives impact', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' };
+    if (count <= 4) return { label: language === 'fr' ? 'Impact modéré' : language === 'ar' ? 'تأثير متوسط' : language === 'tzm' ? 'ⴰⵙⵎⴰⵜⵜⴰⵢ ⴰⵏⴰⵎⵎⴰⵙ' : 'Moderate impact', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' };
+    return { label: language === 'fr' ? 'Impact élevé' : language === 'ar' ? 'تأثير عالي' : language === 'tzm' ? 'ⴰⵙⵎⴰⵜⵜⴰⵢ ⴰⵅⴰⵜⴰⵔ' : 'High additives impact', color: 'text-[#E63E11]', bg: 'bg-red-50', border: 'border-red-200' };
   };
 
   let finalScore = 0;

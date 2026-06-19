@@ -10,7 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 async function startServer() {
   const app = express();
   app.set('trust proxy', 1);
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   app.use(cors({ origin: '*' })); // Allow requests from Vercel
 
@@ -95,7 +95,7 @@ async function startServer() {
   // ---------------------------------------------------------
   app.post('/api/scan-product', async (req, res) => {
     try {
-      const { barcode, userAllergies } = req.body;
+      const { barcode, userAllergies, language = 'en' } = req.body;
       
       let p: any = null;
       
@@ -103,7 +103,7 @@ async function startServer() {
       if (customProducts[barcode]) {
         p = customProducts[barcode];
       } else {
-        // Call Open Food Facts API
+        // Call Open Food Facts API (can specify language if OFF supports but v2 default is general)
         const offResponse = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
         const offData = await offResponse.json();
 
@@ -120,11 +120,19 @@ async function startServer() {
       const warnings: string[] = [];
       let isSafeForUser = true;
 
+      const langMap: Record<string, string> = {
+        'en': 'Contains potential allergen matching user profile',
+        'fr': 'Contient un allergène potentiel correspondant à votre profil',
+        'ar': 'يحتوي على مكون قد يسبب لك حساسية بناءً على ملفك',
+        'tzm': 'ⵉⵍⴰ ⵢⴰⵏ ⵓⵙⵎⴰⵜⵜⴰⵢ ⵏ ⵓⵙⵎⴰⵜⵜⴰⵢ ⵏ ⵓⵙⵎⴰⵜⵜⴰⵢ' // Approximation
+      };
+      const warningPrefix = langMap[language] || langMap['en'];
+
       userAllergyList.forEach(allergy => {
         const alg = allergy.toLowerCase();
         if (productAllergensText.includes(alg) || productIngredientsText.includes(alg)) {
           isSafeForUser = false;
-          warnings.push(`Contains potential allergen matching user profile: ${allergy}`);
+          warnings.push(`${warningPrefix}: ${allergy}`);
         }
       });
 
@@ -165,7 +173,7 @@ async function startServer() {
       const mockScore = barcode.split('').reduce((a:number, b:string) => a + parseInt(b||'0'), 0);
       const estimatedCostMAD = 5 + (mockScore % 25);
 
-      res.json({
+      let scanResult = {
         barcode,
         productName: p.product_name || 'Unknown Product',
         ingredients: p.ingredients_text || 'Not listed',
@@ -179,7 +187,56 @@ async function startServer() {
         additives,
         reviews: productReviews[barcode] || [],
         consensus: productConsensus[barcode] || null
-      });
+      };
+
+      if (process.env.GEMINI_API_KEY && language !== 'en') {
+        try {
+          const langName = language === 'fr' ? 'French' : language === 'ar' ? 'Arabic (Darija/MSA)' : language === 'tzm' ? 'Tamazight' : language;
+          const prompt = `Translate the following product information into ${langName}.
+Return ONLY valid JSON matching this exact structure, with the strings translated. Do not include markdown formatting.
+JSON:
+${JSON.stringify({
+  productName: scanResult.productName,
+  ingredients: scanResult.ingredients,
+  allergens: scanResult.allergens,
+  warnings: scanResult.warnings,
+  ingredientsDetailed: scanResult.ingredientsDetailed.map(i => i.name)
+})}`;
+
+          const translationRes = await ai.models.generateContent({
+             model: 'gemini-2.5-flash',
+             contents: prompt,
+          });
+          
+          const cleanJson = (translationRes.text || "").replace(/```json/g, "").replace(/```/g, "").trim();
+          const translated = JSON.parse(cleanJson);
+          
+          scanResult.productName = translated.productName || scanResult.productName;
+          scanResult.ingredients = translated.ingredients || scanResult.ingredients;
+          scanResult.allergens = translated.allergens || scanResult.allergens;
+          scanResult.warnings = translated.warnings || scanResult.warnings;
+          
+          if (translated.ingredientsDetailed && translated.ingredientsDetailed.length === scanResult.ingredientsDetailed.length) {
+            scanResult.ingredientsDetailed.forEach((ing, i) => {
+               ing.name = translated.ingredientsDetailed[i];
+            });
+          }
+        } catch(e: any) {
+           console.warn(`Scanner translation unavailable (${e?.status || 'API Error'}), using fallback strings.`);
+        }
+      }
+
+      if (req.body.userId) {
+         try {
+           await supabase.from('activity_history').insert({
+             user_id: req.body.userId,
+             activity_type: 'scan',
+             details: scanResult
+           });
+         } catch(e) { console.warn("History table missing or error, skipping scan history logging."); }
+      }
+
+      res.json(scanResult);
     } catch (error: any) {
       console.error("Scanner Error:", error);
       res.status(500).json({ error: error.message || 'Failed to scan product' });
@@ -191,16 +248,17 @@ async function startServer() {
   // ---------------------------------------------------------
   app.post('/api/add-custom-product', async (req, res) => {
     try {
-      const { barcode, productName, ingredients, imageBase64 } = req.body;
-      
+      const { barcode, productName, ingredients, imageBase64, language = 'en' } = req.body;
+      const langName = language === 'fr' ? 'French' : language === 'ar' ? 'Arabic (Darija/MSA)' : language === 'tzm' ? 'Tamazight' : language;
       const prompt = `As a food scientist AI, analyze this product. 
       Name: ${productName}
       Ingredients: ${ingredients}
       Analyze the ingredients and provide a Nutriscore (A, B, C, D, or E), a list of common allergens found in these ingredients, and any e-number additives found or inferred.
+      TRANSLATE all text output (except the single letter Nutriscore) into ${langName}.
       Format your response ONLY as this exact JSON shape (do not include markdown, just the JSON):
       {
         "nutriscore_grade": "C",
-        "allergens_tags": ["en:milk", "en:nuts"],
+        "allergens_tags": ["list", "of", "translated", "allergens"],
         "additives_tags": ["en:e330"]
       }`;
 
@@ -388,6 +446,16 @@ async function startServer() {
       });
       plan.totalCostMAD = parseFloat(computedTotal.toFixed(2));
 
+      if (req.body.userId) {
+         try {
+           await supabase.from('activity_history').insert({
+             user_id: req.body.userId,
+             activity_type: 'meal',
+             details: plan
+           });
+         } catch(e) { console.warn("History table missing or error, skipping meal history logging."); }
+      }
+
       res.json(plan);
     } catch (error: any) {
       console.error("Meal Gen Error:", error);
@@ -418,6 +486,39 @@ async function startServer() {
   // ---------------------------------------------------------
   // ENDPOINT 4: Real Notifications Endpoint
   // ---------------------------------------------------------
+  app.post('/api/history', async (req, res) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ error: "Missing userId" });
+      }
+
+      const { data: historyData, error } = await supabase
+        .from('activity_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        if (error.code === '42P01' || error.message?.includes('does not exist') || error.message?.includes('schema cache')) {
+           console.warn("History table not yet created in Supabase (run supabase_schema.sql). Returning empty history.");
+        } else {
+           console.error("History fetch error:", error.message || error);
+        }
+        return res.json({ scans: [], meals: [], fitness: [] });
+      }
+
+      const scans = historyData.filter(d => d.activity_type === 'scan').map(d => ({ ...d.details, date: d.created_at }));
+      const meals = historyData.filter(d => d.activity_type === 'meal').map(d => ({ ...d.details, date: d.created_at }));
+      const fitness = historyData.filter(d => d.activity_type === 'fitness').map(d => ({ ...d.details, date: d.created_at }));
+
+      res.json({ scans, meals, fitness });
+    } catch (err: any) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch history" });
+    }
+  });
+
   app.post('/api/notifications', async (req, res) => {
     try {
       const { userId } = req.body;
@@ -528,6 +629,17 @@ async function startServer() {
       const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
       const plan = JSON.parse(cleanJson);
       
+      const userId = req.body.user?.id;
+      if (userId) {
+         try {
+           await supabase.from('activity_history').insert({
+             user_id: userId,
+             activity_type: 'fitness',
+             details: plan
+           });
+         } catch(e) { console.warn("History table missing or error, skipping fitness history logging."); }
+      }
+
       res.json(plan);
     } catch (error: any) {
       console.error("Fitness Gen Error:", error);

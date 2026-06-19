@@ -8,6 +8,7 @@ export const translations = {
     scanner: "Food Scanner",
     meals: "Smart Meals",
     fitness: "Smart Fitness",
+    history: "History",
     profile: "Profile",
     
     // Auth
@@ -76,6 +77,7 @@ export const translations = {
     scanner: "Scanner Alimentaire",
     meals: "Repas Intelligents",
     fitness: "Fitness",
+    history: "Historique",
     profile: "Profil",
     
     // Auth
@@ -144,6 +146,7 @@ export const translations = {
     scanner: "الماسح",
     meals: "وجبات ذكية",
     fitness: "لياقة ذكية",
+    history: "السجل",
     profile: "الحساب",
     
     // Auth
@@ -212,6 +215,7 @@ export const translations = {
     scanner: "ⴰⵙⴽⴰⵏⵉⵔ",
     meals: "ⵜⵉⵔⵎⵜ ⵉⵎⵖⵔⵏ",
     fitness: "ⵜⴰⴷⵓⵙⵉ",
+    history: "ⴰⵎⵣⵔⵓⵢ",
     profile: "ⴰⵙⴰⵔⵓ",
     
     // Auth

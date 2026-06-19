@@ -59,3 +59,15 @@ CREATE TABLE public.meals (
 
 ALTER TABLE public.meals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their meals" ON public.meals FOR ALL USING (auth.uid() = user_id);
+
+-- 5. History Table
+CREATE TABLE public.activity_history (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+  activity_type TEXT CHECK (activity_type IN ('scan', 'meal', 'fitness')),
+  details JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.activity_history ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their history" ON public.activity_history FOR ALL USING (auth.uid() = user_id);

@@ -1,4 +1,4 @@
-import { ScanLine, FileText, Utensils, Home, Bell, User, Dumbbell, HeartPulse, Coins, Globe, LogOut } from 'lucide-react';
+import { ScanLine, FileText, Utensils, Home, Bell, User, Dumbbell, HeartPulse, Coins, Globe, LogOut, Clock } from 'lucide-react';
 import { Logo } from './components/Logo';
 import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
@@ -9,6 +9,7 @@ import Auth from './components/Auth';
 import Profile from './components/Profile';
 import Fitness from './components/Fitness';
 import TokenStore from './components/TokenStore';
+import History from './components/History';
 import type { MedicalProfile, UserProfile } from './types';
 
 import { Language, translations } from './translations';
@@ -339,6 +340,8 @@ export default function App() {
         return <MealDisplay budget={budget} medicalProfile={medicalProfile} user={user} onUpdateUser={handleUpdateUser} language={language} />;
       case 'fitness':
         return <Fitness user={user} medicalProfile={medicalProfile} onUpdateUser={handleUpdateUser} language={language} />;
+      case 'history':
+        return <History user={user} language={language} />;
       case 'profile':
         return <Profile user={user} onUpdate={handleUpdateUser} language={language} />;
       default:
@@ -353,6 +356,7 @@ export default function App() {
     { id: 'scanner', label: t.scanner, icon: ScanLine },
     { id: 'meals', label: t.meals, icon: Utensils },
     { id: 'fitness', label: t.fitness, icon: Dumbbell },
+    { id: 'history', label: t.history || 'Historique', icon: Clock },
   ];
 
   return (
