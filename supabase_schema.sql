@@ -15,8 +15,11 @@ CREATE TABLE IF NOT EXISTS public.users (
 
 -- Enable RLS for Users
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
 CREATE POLICY "Users can view own profile" ON public.users FOR SELECT USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
 CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
 CREATE POLICY "Users can insert own profile" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- 2. Medical Profiles
@@ -30,6 +33,7 @@ CREATE TABLE IF NOT EXISTS public.medical_profiles (
 
 -- Enable RLS for Medical Profiles
 ALTER TABLE public.medical_profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their medical profiles" ON public.medical_profiles;
 CREATE POLICY "Users can manage their medical profiles" ON public.medical_profiles FOR ALL USING (auth.uid() = user_id);
 
 -- 3. Medications
@@ -44,6 +48,7 @@ CREATE TABLE IF NOT EXISTS public.medications (
 );
 
 ALTER TABLE public.medications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their medications" ON public.medications;
 CREATE POLICY "Users can manage their medications" ON public.medications FOR ALL USING (auth.uid() = user_id);
 
 -- 4. Meals (Budget optimized tracking)
@@ -58,6 +63,7 @@ CREATE TABLE IF NOT EXISTS public.meals (
 );
 
 ALTER TABLE public.meals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their meals" ON public.meals;
 CREATE POLICY "Users can manage their meals" ON public.meals FOR ALL USING (auth.uid() = user_id);
 
 -- 5. History Table
@@ -70,4 +76,24 @@ CREATE TABLE IF NOT EXISTS public.activity_history (
 );
 
 ALTER TABLE public.activity_history ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their history" ON public.activity_history;
 CREATE POLICY "Users can manage their history" ON public.activity_history FOR ALL USING (auth.uid() = user_id);
+
+-- 6. Product Reviews Table
+CREATE TABLE IF NOT EXISTS public.product_reviews (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  barcode TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  review_text TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.product_reviews ENABLE ROW LEVEL SECURITY;
+-- For now, public can read and insert reviews
+DROP POLICY IF EXISTS "Anyone can read reviews" ON public.product_reviews;
+CREATE POLICY "Anyone can read reviews" ON public.product_reviews FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Anyone can insert reviews" ON public.product_reviews;
+CREATE POLICY "Anyone can insert reviews" ON public.product_reviews FOR INSERT WITH CHECK (true);
+

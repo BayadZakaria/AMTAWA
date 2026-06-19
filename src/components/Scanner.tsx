@@ -39,7 +39,12 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
     setShowLiveCamera(true);
     setTimeout(async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        let stream;
+        try {
+           stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: 'environment' } } });
+        } catch (e) {
+           stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        }
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -322,26 +327,37 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {showLiveCamera && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
-          <div className="w-full max-w-md bg-black rounded-2xl overflow-hidden relative shadow-2xl">
-            <video ref={videoRef} autoPlay playsInline className="w-full h-[400px] object-cover bg-slate-900" />
+        <div className="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center supports-[min-height:100dvh]:h-[100dvh]">
+          <div className="w-full h-full relative bg-slate-900 flex flex-col">
+            <video ref={videoRef} autoPlay playsInline className="flex-1 object-cover w-full h-full" />
             
-            <div className="absolute inset-0 pointer-events-none border-[4px] border-white/20 m-8 rounded-xl flex items-center justify-center">
-               <div className="w-full h-0.5 bg-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.8)]" />
+            {/* Guide overlay */}
+            <div className="absolute inset-0 pointer-events-none flex flex-col justify-center items-center px-8">
+               <div className="w-full aspect-[4/3] max-w-[300px] border-2 border-white/30 rounded-2xl relative shadow-[0_0_0_4000px_rgba(0,0,0,0.5)]">
+                 <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-2xl -mt-1 -ml-1" />
+                 <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-2xl -mt-1 -mr-1" />
+                 <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-2xl -mb-1 -ml-1" />
+                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-2xl -mb-1 -mr-1" />
+                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/70 -translate-y-1/2 animate-pulse shadow-[0_0_12px_rgba(239,68,68,1)]" />
+               </div>
+               <p className="text-white font-medium mt-12 bg-black/50 backdrop-blur-sm px-6 py-2.5 rounded-full shadow-lg">
+                 {language === 'fr' ? 'Cadrez le code-barres' : language === 'ar' ? 'قم بتوجيه الكاميرا إلى الرمز الشريطي' : 'Frame the barcode'}
+               </p>
             </div>
 
-            <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4 px-6">
+            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-6 px-8 z-10 w-full max-w-md mx-auto">
               <button 
                 onClick={stopLiveCamera}
-                className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-bold backdrop-blur-md transition-colors"
+                className="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all border border-white/20"
               >
-                Annuler
+                <div className="w-4 h-4 rounded-sm bg-white" />
               </button>
               <button 
                 onClick={captureLiveImage}
-                className="px-6 py-3 bg-white text-black rounded-xl font-bold hover:bg-slate-200 transition-colors flex-1"
+                disabled={scanningImage}
+                className="h-16 w-16 rounded-full bg-white text-black font-bold hover:scale-105 active:scale-95 transition-transform flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.4)] disabled:opacity-50"
               >
-                Capturer & Scanner
+                {scanningImage ? <div className="w-6 h-6 border-4 border-slate-300 border-t-black rounded-full animate-spin" /> : <Camera className="w-7 h-7" />}
               </button>
             </div>
           </div>
@@ -453,15 +469,21 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
                  <div className="bg-purple-50 text-purple-700 p-4 rounded-xl border border-purple-100 flex items-center gap-3">
                    <ShieldCheck className="w-8 h-8 text-purple-500 flex-shrink-0" />
                    <div>
-                     <span className="text-sm font-bold block">Safe for your profile</span>
-                     <span className="text-xs opacity-90 block">No conflicting allergens detected.</span>
+                     <span className="text-sm font-bold block">
+                       {language === 'fr' ? 'Sûr pour votre profil' : language === 'ar' ? 'آمن لملفك الشخصي' : 'Safe for your profile'}
+                     </span>
+                     <span className="text-xs opacity-90 block">
+                       {language === 'fr' ? 'Aucun allergène conflictuel détecté.' : language === 'ar' ? 'لم يتم اكتشاف أي مسببات حساسية.' : 'No conflicting allergens detected.'}
+                     </span>
                    </div>
                  </div>
               ) : (
-                 <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 flex items-start gap-3">
+                 <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 flex items-start gap-3 shadow-sm">
                    <ShieldAlert className="w-8 h-8 text-red-500 flex-shrink-0 mt-0.5" />
                    <div>
-                     <span className="text-sm font-bold block">WARNING! Allergen Match</span>
+                     <span className="text-sm font-bold block">
+                       {language === 'fr' ? 'ATTENTION ! Correspondance d\'allergène' : language === 'ar' ? 'تحذير! تطابق مُسبب حساسية' : 'WARNING! Allergen Match'}
+                     </span>
                      <ul className="text-xs mt-1 space-y-1 opacity-90 list-disc ml-4">
                        {result.warnings?.map((w,i)=><li key={i}>{w}</li>)}
                      </ul>

@@ -173,6 +173,28 @@ async function startServer() {
       const mockScore = barcode.split('').reduce((a:number, b:string) => a + parseInt(b||'0'), 0);
       const estimatedCostMAD = 5 + (mockScore % 25);
 
+      // Fetch reviews from Supabase
+      let fetchedReviews: any[] = productReviews[barcode] || [];
+      try {
+        const { data, error } = await supabase
+          .from('product_reviews')
+          .select('*')
+          .eq('barcode', barcode)
+          .order('created_at', { ascending: false });
+        
+        if (!error && data) {
+           fetchedReviews = data.map(r => ({
+              id: r.id,
+              user: r.user_name,
+              text: r.review_text,
+              rating: r.rating,
+              date: r.created_at
+           }));
+        }
+      } catch (err) {
+        console.warn("Failed to fetch reviews from Supabase:", err);
+      }
+
       let scanResult = {
         barcode,
         productName: p.product_name || 'Unknown Product',
@@ -185,7 +207,7 @@ async function startServer() {
         estimatedCostMAD,
         ingredientsDetailed,
         additives,
-        reviews: productReviews[barcode] || [],
+        reviews: fetchedReviews,
         consensus: productConsensus[barcode] || null
       };
 
@@ -305,48 +327,76 @@ ${JSON.stringify({
   // ENDPOINT 2.2: Add Product Review
   // ---------------------------------------------------------
   app.post('/api/product-review', async (req, res) => {
-    const { barcode, user, text, rating, language = 'en' } = req.body;
-    if (!productReviews[barcode]) {
-      productReviews[barcode] = [];
-    }
-    productReviews[barcode].push({
-      id: Date.now(),
-      user: user || 'Anonymous',
-      text,
-      rating,
-      date: new Date().toISOString()
-    });
-
-    const newReviews = productReviews[barcode];
-
-    // Background AI Analysis for Consensus
-    if (process.env.GEMINI_API_KEY && newReviews.length > 0) {
-      try {
-        const prompt = `As a community sentiment analyzer for a health product.
-        Here are the user reviews:
-        ${newReviews.map(r => `- Rating: ${r.rating}/5. Review: "${r.text}"`).join('\n')}
-        
-        Analyze the overall sentiment. If the reviews are generally negative and warn about bad quality or health issues, classify it as "Not Recommended". If they are mostly positive, classify it as "Recommended". Otherwise classify as "Mixed".
-        The summary text MUST BE TRANSLATED into the following language: ${language}.
-        Return JSON strictly in this format without markdown formatting:
-        {
-          "status": "Recommended" | "Not Recommended" | "Mixed",
-          "summary": "A short 1-sentence summary of the consensus."
-        }`;
-
-        const aiResponse = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt
-        });
-        const rawText = aiResponse.text || "{}";
-        const cleanJson = rawText.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
-        productConsensus[barcode] = JSON.parse(cleanJson);
-      } catch (err) {
-        console.error("Failed to sequence AI background task", err);
+    try {
+      const { barcode, user, text, rating, language = 'en' } = req.body;
+      
+      // Save review to Supabase
+      const { error: insertError } = await supabase.from('product_reviews').insert({
+        barcode,
+        user_name: user || 'Anonymous',
+        rating,
+        review_text: text
+      });
+      
+      if (insertError) {
+         console.warn("Product reviews table might not be created yet, proceeding anyway:", insertError);
       }
-    }
 
-    res.json({ success: true, reviews: newReviews, consensus: productConsensus[barcode] || null });
+      // Fetch all reviews for this barcode
+      const { data: reviewsData, error: selectError } = await supabase
+        .from('product_reviews')
+        .select('*')
+        .eq('barcode', barcode)
+        .order('created_at', { ascending: false });
+
+      let newReviews = [];
+      if (!selectError && reviewsData) {
+        newReviews = reviewsData.map(r => ({
+          id: r.id,
+          user: r.user_name,
+          text: r.review_text,
+          rating: r.rating,
+          date: r.created_at
+        }));
+      } else {
+        // Fallback to memory if supabase fails/table not exist
+        if (!productReviews[barcode]) productReviews[barcode] = [];
+        productReviews[barcode].push({ id: Date.now(), user: user || 'Anonymous', text, rating, date: new Date().toISOString() });
+        newReviews = productReviews[barcode];
+      }
+
+      // Background AI Analysis for Consensus
+      if (process.env.GEMINI_API_KEY && newReviews.length > 0) {
+        try {
+          const prompt = `As a community sentiment analyzer for a health product.
+          Here are the user reviews:
+          ${newReviews.map((r: any) => `- Rating: ${r.rating}/5. Review: "${r.text}"`).join('\n')}
+          
+          Analyze the overall sentiment. If the reviews are generally negative and warn about bad quality or health issues, classify it as "Not Recommended". If they are mostly positive, classify it as "Recommended". Otherwise classify as "Mixed".
+          The summary text MUST BE TRANSLATED into the following language: ${language}.
+          Return JSON strictly in this format without markdown formatting:
+          {
+            "status": "Recommended" | "Not Recommended" | "Mixed",
+            "summary": "A short 1-sentence summary of the consensus."
+          }`;
+
+          const aiResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt
+          });
+          const rawText = aiResponse.text || "{}";
+          const cleanJson = rawText.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
+          productConsensus[barcode] = JSON.parse(cleanJson);
+        } catch (err) {
+          console.error("Failed to sequence AI background task", err);
+        }
+      }
+
+      res.json({ success: true, reviews: newReviews, consensus: productConsensus[barcode] || null });
+    } catch (err: any) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // ---------------------------------------------------------
