@@ -102,6 +102,12 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64: compressedBase64 })
       });
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+         throw new Error("Le serveur est en pause (Vercel/Render). Veuillez patienter 30 secondes et réessayer.");
+      }
+
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to read barcode from image');
       
@@ -131,6 +137,11 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
           userAllergies: medicalProfile.allergies
         })
       });
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+         throw new Error("Le serveur est en pause (Vercel/Render). Veuillez patienter 30 secondes et réessayer.");
+      }
 
       const data = await response.json();
       if (!response.ok) {
@@ -341,7 +352,7 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
            Enter a barcode to query the Open Food Facts API. The backend evaluates exact ingredients against your OCR-detected health constraints.
         </p>
 
-        <form onSubmit={handleScan} className="flex gap-2">
+        <form onSubmit={handleScan} className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <span className="absolute inset-y-0 left-4 text-slate-400 flex items-center">#</span>
              <input 
