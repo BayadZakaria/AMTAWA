@@ -1,7 +1,7 @@
 -- Supabase Schema for Smart Nutrition & Med-Care MVP
 
 -- 1. Users Table
-CREATE TABLE public.users (
+CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email TEXT UNIQUE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -20,7 +20,7 @@ CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE USING (a
 CREATE POLICY "Users can insert own profile" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- 2. Medical Profiles
-CREATE TABLE public.medical_profiles (
+CREATE TABLE IF NOT EXISTS public.medical_profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   allergies TEXT[] DEFAULT '{}',
@@ -33,7 +33,7 @@ ALTER TABLE public.medical_profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their medical profiles" ON public.medical_profiles FOR ALL USING (auth.uid() = user_id);
 
 -- 3. Medications
-CREATE TABLE public.medications (
+CREATE TABLE IF NOT EXISTS public.medications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -47,7 +47,7 @@ ALTER TABLE public.medications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their medications" ON public.medications FOR ALL USING (auth.uid() = user_id);
 
 -- 4. Meals (Budget optimized tracking)
-CREATE TABLE public.meals (
+CREATE TABLE IF NOT EXISTS public.meals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   meal_date DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -61,7 +61,7 @@ ALTER TABLE public.meals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their meals" ON public.meals FOR ALL USING (auth.uid() = user_id);
 
 -- 5. History Table
-CREATE TABLE public.activity_history (
+CREATE TABLE IF NOT EXISTS public.activity_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   activity_type TEXT CHECK (activity_type IN ('scan', 'meal', 'fitness')),
