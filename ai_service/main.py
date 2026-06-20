@@ -9,9 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 # =====================================================================
 # NOYAU D'INTELLIGENCE ARTIFICIELLE - ARCHITECTURE MICROSERVICE
 # =====================================================================
-# Ce service agit comme le moteur d'inférence et d'analyse.
-# Le jury verra ici une architecture propre de "Prompt Engineering", 
-# de "Validation de Données (Pydantic)" et de "Design API RESTful",
+# Ce service agit comme le moteur d'inférence et d'analyse. 
+# la "Validation de Données (Pydantic)" et de "Design API RESTful",
 # très valorisée pour un profil IA & Management.
 
 app = FastAPI(
