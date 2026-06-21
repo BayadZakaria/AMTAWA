@@ -23,7 +23,7 @@ export default function History({ user, language = 'en' }: HistoryProps) {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch('https://amtawa-1.onrender.com/api/history', {
+      const res = await fetch('/api/history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id })

@@ -30,7 +30,7 @@ export default function TokenStore({ user, onUpdateUser, onBack, language = 'en'
 
     setBuying(tokens);
     try {
-      const response = await fetch('https://amtawa-1.onrender.com/api/create-checkout-session', {
+      const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokens, price_mad: priceMAD, origin: window.location.origin }),

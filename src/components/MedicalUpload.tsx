@@ -105,7 +105,7 @@ export default function MedicalUpload({ medicalProfile, onDataParsed, language =
     try {
       const base64Data = await simulateBase64Encode(file);
 
-      const response = await fetch('https://amtawa-1.onrender.com/api/parse-medical', {
+      const response = await fetch('/api/parse-medical', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -102,7 +102,7 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
     setError(null);
     setResult(null);
     try {
-      const response = await fetch('https://amtawa-1.onrender.com/api/scan-barcode-image', {
+      const response = await fetch('/api/scan-barcode-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_base64: compressedBase64 })
@@ -135,7 +135,7 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
 
     try {
       // Pointing to Render backend for Hybrid Routing (V2)
-      const response = await fetch('https://amtawa-1.onrender.com/api/analyze-product', {
+      const response = await fetch('/api/analyze-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -214,7 +214,7 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
     e.preventDefault();
     setAddingProduct(true);
     try {
-      const res = await fetch('https://amtawa-1.onrender.com/api/add-custom-product', {
+      const res = await fetch('/api/add-custom-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -241,7 +241,7 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
     
     setSubmittingReview(true);
     try {
-      const res = await fetch('https://amtawa-1.onrender.com/api/product-review', {
+      const res = await fetch('/api/product-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

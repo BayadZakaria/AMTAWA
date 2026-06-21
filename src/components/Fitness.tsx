@@ -46,7 +46,7 @@ export default function Fitness({ user, medicalProfile, onUpdateUser, language =
     setCompletedExercises(new Set());
 
     try {
-      const res = await fetch('https://amtawa-1.onrender.com/api/generate-fitness', {
+      const res = await fetch('/api/generate-fitness', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
