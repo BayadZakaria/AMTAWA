@@ -62,20 +62,24 @@ async def analyze_product(request: AnalyzeProductRequest):
     ingredients = product_info.get('ingredients_text', 'غير متوفر')
     kcal = product_info.get('nutriments', {}).get('energy-kcal_100g', 'غير متوفر')
 
-    system_prompt = f"أنت خبير تغذية رياضي مغربي. الحساسية: {allergies}. المنتج: {product_name}. المكونات: {ingredients}. السعرات: {kcal}. قدم نصيحة احترافية."
+    system_prompt = f"أنت خبير تغذية مغربي. الحساسية: {allergies}. المنتج: {product_name}. المكونات: {ingredients}. السعرات: {kcal}. قدم نصيحة احترافية."
 
-    # 4. Ollama Call (Fix: Host Header)
+    # 4. Ollama Call (Fix: Host Header & Ngrok bypass)
     ollama_payload = {"model": "llama3", "messages": [{"role": "user", "content": system_prompt}], "stream": False}
     
-    # Extract host for Ngrok
     host_header = OLLAMA_URL.replace("https://", "").replace("http://", "").split("/")[0]
+
+    headers = {
+        "Host": host_header,
+        "ngrok-skip-browser-warning": "true"
+    }
 
     async with httpx.AsyncClient() as client:
         try:
             ollama_response = await client.post(
                 OLLAMA_URL, 
                 json=ollama_payload, 
-                headers={"Host": host_header},
+                headers=headers,
                 timeout=None
             )
             
