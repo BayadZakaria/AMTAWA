@@ -243,10 +243,10 @@ export default function App() {
 
       // 4. Fetch Real Notifications
       try {
-        const notifRes = await fetch('/api/notifications', {
+        const notifRes = await fetch('https://amtawa-1.onrender.com/api/notifications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id })
+          body: JSON.stringify({ user_id: user.id })
         });
         if (notifRes.ok) {
           const notifData = await notifRes.json();

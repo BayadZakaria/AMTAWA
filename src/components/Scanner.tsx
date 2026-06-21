@@ -102,10 +102,10 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
     setError(null);
     setResult(null);
     try {
-      const response = await fetch('/api/scan-barcode-image', {
+      const response = await fetch('https://amtawa-1.onrender.com/api/scan-barcode-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: compressedBase64 })
+        body: JSON.stringify({ image_base64: compressedBase64 })
       });
 
       const contentType = response.headers.get("content-type");
@@ -134,28 +134,20 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
     setShowAddForm(false);
 
     try {
-      const response = await fetch('/api/scan-product', {
+      // Pointing to Render backend for Hybrid Routing (V2)
+      const response = await fetch('https://amtawa-1.onrender.com/api/analyze-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           barcode: barcodeToScan,
-          userAllergies: medicalProfile.allergies,
-          userId: user.id,
+          user_id: user.id,
           language: language
         })
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-         throw new Error("Le serveur est en pause (Vercel/Render). Veuillez patienter 30 secondes et réessayer.");
-      }
-
       const data = await response.json();
       if (!response.ok) {
-        if (response.status === 404) {
-          setShowAddForm(true);
-        }
-        throw new Error(data.error);
+        throw new Error(data.detail || data.error || "Erreur du serveur d'analyse.");
       }
 
       setResult(data);
@@ -222,14 +214,14 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
     e.preventDefault();
     setAddingProduct(true);
     try {
-      const res = await fetch('/api/add-custom-product', {
+      const res = await fetch('https://amtawa-1.onrender.com/api/add-custom-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           barcode,
-          productName: newProductName,
+          product_name: newProductName,
           ingredients: newIngredients,
-          imageBase64: newImageBase64
+          image_base64: newImageBase64
         })
       });
       if (!res.ok) throw new Error('Failed to add product');
@@ -249,12 +241,12 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
     
     setSubmittingReview(true);
     try {
-      const res = await fetch('/api/product-review', {
+      const res = await fetch('https://amtawa-1.onrender.com/api/product-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           barcode: result.barcode,
-          user: user.name || 'Current User',
+          user_name: user.name || 'Current User',
           text: reviewText,
           rating: reviewRating,
           language: language
@@ -410,11 +402,12 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
           <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row gap-6 items-center bg-white">
             <div className="flex-1 flex flex-col md:flex-row items-center gap-6 text-center md:text-left w-full">
               {result.image && (
-                <img src={result.image} alt={result.productName} className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-2xl shadow-sm bg-slate-50" />
+                <img src={result.image} alt={result.product_name || result.productName} className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-2xl shadow-sm bg-slate-50" />
               )}
               
               <div className="flex-1">
-                <h3 className="text-2xl font-bold text-slate-800">{result.productName}</h3>
+                <h3 className="text-2xl font-bold text-slate-800">{result.product_name || result.productName}</h3>
+                {result.estimatedCostMAD !== undefined && (
                 <div className="flex items-center gap-2 mt-3 justify-center md:justify-start">
                   <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold flex items-center gap-1 group relative">
                     Nutriscore: 
@@ -426,10 +419,12 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
                      <Tag className="w-4 h-4" /> EST {result.estimatedCostMAD} MAD
                   </span>
                 </div>
+                )}
               </div>
             </div>
 
             {/* Health Score Gauge */}
+            {result.nutriscore !== undefined && (
             <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 w-full md:w-auto mt-4 md:mt-0 shadow-inner">
                <div className="relative w-24 h-24 flex items-center justify-center flex-shrink-0">
                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -460,12 +455,14 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
                   </div>
                </div>
             </div>
+            )}
           </div>
 
           <div className="p-6">
             <div className="space-y-6">
               {/* Profile Match Safety */}
-              {result.isSafeForUser ? (
+              {result.isSafeForUser !== undefined && (
+                result.isSafeForUser ? (
                  <div className="bg-purple-50 text-purple-700 p-4 rounded-xl border border-purple-100 flex items-center gap-3">
                    <ShieldCheck className="w-8 h-8 text-purple-500 flex-shrink-0" />
                    <div>
@@ -485,17 +482,18 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
                        {language === 'fr' ? 'ATTENTION ! Correspondance d\'allergène' : language === 'ar' ? 'تحذير! تطابق مُسبب حساسية' : 'WARNING! Allergen Match'}
                      </span>
                      <ul className="text-xs mt-1 space-y-1 opacity-90 list-disc ml-4">
-                       {result.warnings?.map((w,i)=><li key={i}>{w}</li>)}
+                       {result.warnings?.map((w: string,i: number)=><li key={i}>{w}</li>)}
                      </ul>
                    </div>
                  </div>
-              )}
+              ))}
 
+              {result.ingredientsDetailed !== undefined && (
               <div>
                 <p className="text-xs font-bold uppercase text-slate-400 mb-3">Ingredients Analysis</p>
                 {result.ingredientsDetailed && result.ingredientsDetailed.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {result.ingredientsDetailed.map((ing, idx) => (
+                    {result.ingredientsDetailed.map((ing: any, idx: number) => (
                       <span key={idx} className={`px-2 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1 ${
                         ing.isAllergen 
                           ? 'bg-red-50 text-red-700 border-red-200' 
@@ -515,7 +513,7 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
                   <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
                     <div className="flex flex-wrap gap-1.5 flex-1">
                       <span className="text-xs font-bold text-amber-800 w-full mb-1">Detected Additives ({result.additives.length})</span>
-                      {result.additives.map((add, i) => (
+                      {result.additives.map((add: string, i: number) => (
                         <span key={i} className="text-xs font-bold bg-white px-2 py-1 rounded-md text-amber-600 shadow-sm border border-amber-100">
                           {add}
                         </span>
@@ -524,6 +522,19 @@ export default function Scanner({ medicalProfile, user, onUpdateUser, language =
                   </div>
                 )}
               </div>
+              )}
+
+              {/* AI Analysis (V2) */}
+              {result.analysis && (
+                <div className="mt-4">
+                  <p className="text-xs font-bold uppercase text-slate-400 mb-3 flex items-center gap-2">
+                    Analyse Expert (Ollama)
+                  </p>
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
+                    {result.analysis}
+                  </div>
+                </div>
+              )}
 
               {/* Reviews Section */}
               <div className="mt-8 pt-8 border-t border-slate-100">

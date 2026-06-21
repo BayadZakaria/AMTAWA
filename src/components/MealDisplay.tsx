@@ -38,17 +38,17 @@ export default function MealDisplay({ budget, medicalProfile, user, onUpdateUser
     setError(null);
     setNeedsOptimization(false);
     try {
-      const response = await fetch('/api/generate-meals', {
+      const response = await fetch('https://amtawa-1.onrender.com/api/generate-meals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user.id,
-          budgetMAD: budget,
+          user_id: user.id,
+          budget_mad: budget,
           conditions: [...medicalProfile.allergies, ...medicalProfile.conditions],
-          userBiometrics: user ? {
+          user_biometrics: user ? {
             age: user.age,
-            weightKg: user.weightKg,
-            heightCm: user.heightCm
+            weight_kg: user.weightKg,
+            height_cm: user.heightCm
           } : null,
           language
         })

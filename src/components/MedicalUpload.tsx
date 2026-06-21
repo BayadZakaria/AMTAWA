@@ -105,14 +105,14 @@ export default function MedicalUpload({ medicalProfile, onDataParsed, language =
     try {
       const base64Data = await simulateBase64Encode(file);
 
-      const response = await fetch('/api/parse-medical', {
+      const response = await fetch('https://amtawa-1.onrender.com/api/parse-medical', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-           imageBase64: base64Data,
-           mimeType: file.type,
+           image_base64: base64Data,
+           mime_type: file.type,
            language: language
         })
       });
@@ -340,7 +340,6 @@ export default function MedicalUpload({ medicalProfile, onDataParsed, language =
       {error && (
         <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm font-medium text-center">
           {error}
-          <div className="mt-2 text-xs opacity-80">Make sure GEMINI_API_KEY is configured in the environment settings.</div>
         </div>
       )}
 
