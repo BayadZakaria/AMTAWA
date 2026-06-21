@@ -47,7 +47,8 @@ export default function Auth({ onLogin, language = 'en' }: AuthProps) {
             email,
             password,
             options: {
-              data: { name }
+              data: { name },
+              emailRedirectTo: window.location.origin
             }
           });
           if (error) throw error;
