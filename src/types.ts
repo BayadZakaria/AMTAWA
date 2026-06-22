@@ -34,6 +34,12 @@ export interface ProductScanResult {
   isSafeForUser?: boolean;
   warnings?: string[];
   estimatedCostMAD?: number;
+  product_name?: string;
+  analysis?: string;
+  consensus?: {
+    status: string;
+    summary: string;
+  };
   ingredientsDetailed?: {
     name: string;
     isAllergen: boolean;

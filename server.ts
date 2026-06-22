@@ -30,6 +30,28 @@ async function startServer() {
   const productConsensus: Record<string, { status: string, summary: string }> = {};
 
   // ---------------------------------------------------------
+  // ENDPOINT 0: Proxy /api/analyze-product to Render Backend
+  // ---------------------------------------------------------
+  app.post('/api/analyze-product', async (req, res) => {
+    try {
+      const response = await fetch('https://amtawa-1.onrender.com/analyze-product', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(req.body)
+      });
+      
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (err: any) {
+      console.error("Proxy Error to Render:", err);
+      res.status(502).json({ error: "Failed to connect to Python Backend on Render: " + err.message });
+    }
+  });
+
+  // ---------------------------------------------------------
   // ENDPOINT 1: AI Medical Parsing (OCR/NLP) via Gemini
   // ---------------------------------------------------------
   app.post('/api/parse-medical', async (req, res) => {
