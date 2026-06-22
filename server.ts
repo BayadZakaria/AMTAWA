@@ -21,7 +21,7 @@ async function startServer() {
   // Middleware for large payload parsing (e.g. Base64 images)
   app.use(express.json({ limit: '200mb' }));
   app.use(express.urlencoded({ extended: true, limit: '200mb' }));
-  
+
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'MISSING_KEY' });
 
   // In-memory mock DB for custom products and reviews
@@ -30,7 +30,7 @@ async function startServer() {
   const productConsensus: Record<string, { status: string, summary: string }> = {};
 
   // ---------------------------------------------------------
-  // ENDPOINT 0: Proxy /api/analyze-product to Render Backend
+  // ENDPOINT 0: Proxy /api/analyze-product vers le Backend Render
   // ---------------------------------------------------------
   app.post('/api/analyze-product', async (req, res) => {
     try {
@@ -42,7 +42,7 @@ async function startServer() {
         },
         body: JSON.stringify(req.body)
       });
-      
+
       const data = await response.json();
       res.status(response.status).json(data);
     } catch (err: any) {
@@ -52,7 +52,7 @@ async function startServer() {
   });
 
   // ---------------------------------------------------------
-  // ENDPOINT 1: AI Medical Parsing (OCR/NLP) via Gemini
+  // ENDPOINT 1: Analyse Médicale IA (OCR/NLP) via Gemini
   // ---------------------------------------------------------
   app.post('/api/parse-medical', async (req, res) => {
     try {
@@ -61,7 +61,7 @@ async function startServer() {
       }
 
       const { imageBase64, mimeType, language = 'en' } = req.body;
-      
+
       const prompt = `Analyze this medical document or prescription. 
       Extract any explicit diseases, chronic conditions, and allergies.
       The output translation MUST BE in ${language}.
@@ -79,7 +79,7 @@ async function startServer() {
           model: 'gemini-2.5-flash',
           contents: [
             prompt,
-            { inlineData: { data: imageBase64, mimeType: mimeType || 'image/jpeg' }}
+            { inlineData: { data: imageBase64, mimeType: mimeType || 'image/jpeg' } }
           ]
         });
       } else {
@@ -89,38 +89,38 @@ async function startServer() {
       const rawText = response.text || "{}";
       const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
       const parsedData = JSON.parse(cleanJson);
-      
+
       res.json(parsedData);
     } catch (error: any) {
       console.error("Medical Parse Error:", error);
       const errMsg = error?.message || '';
       const errStr = JSON.stringify(error) || '';
       if (
-        error?.status === 503 || 
-        errMsg.includes("503") || 
-        errMsg.includes("quota") || 
+        error?.status === 503 ||
+        errMsg.includes("503") ||
+        errMsg.includes("quota") ||
         errMsg.includes("demand") ||
         errStr.includes("503") ||
         errStr.includes("UNAVAILABLE")
       ) {
-          return res.json({
-            allergies: ["API en surcharge (temporaire)"],
-            conditions: ["Veuillez réessayer plus tard"]
-          });
+        return res.json({
+          allergies: ["API en surcharge (temporaire)"],
+          conditions: ["Veuillez réessayer plus tard"]
+        });
       }
       res.status(500).json({ error: error.message || 'Failed to parse medical data' });
     }
   });
 
   // ---------------------------------------------------------
-  // ENDPOINT 2: Smart Product Scanner (Open Food Facts + Validation)
+  // ENDPOINT 2: Scanner de Produit Intelligent (Open Food Facts + Validation)
   // ---------------------------------------------------------
   app.post('/api/scan-product', async (req, res) => {
     try {
       const { barcode, userAllergies, language = 'en' } = req.body;
-      
+
       let p: any = null;
-      
+
       // Check in-memory custom products first
       if (customProducts[barcode]) {
         p = customProducts[barcode];
@@ -159,40 +159,40 @@ async function startServer() {
       });
 
       // Parse additives
-      const additives = p.additives_original_tags 
-          ? p.additives_original_tags.map((t: string) => t.replace('en:', '').toUpperCase()) 
-          : (p.additives_tags ? p.additives_tags.map((t: string) => t.replace('en:', '').toUpperCase()) : []);
+      const additives = p.additives_original_tags
+        ? p.additives_original_tags.map((t: string) => t.replace('en:', '').toUpperCase())
+        : (p.additives_tags ? p.additives_tags.map((t: string) => t.replace('en:', '').toUpperCase()) : []);
 
       // Parse detailed ingredients
       const rawIngredients = p.ingredients || [];
-      const ingredientsDetailed: Array<{name: string, isAllergen: boolean, isAdditive: boolean, percent?: number}> = [];
-      
+      const ingredientsDetailed: Array<{ name: string, isAllergen: boolean, isAdditive: boolean, percent?: number }> = [];
+
       if (rawIngredients.length > 0) {
-          rawIngredients.forEach((ing: any) => {
-              const name = (ing.text || '').replace(/_/g, '').trim();
-              if(!name) return;
-              let isAllergen = false;
-              userAllergyList.forEach(alg => {
-                  if (name.toLowerCase().includes(alg.toLowerCase())) isAllergen = true;
-              });
-              const isAdditive = name.toLowerCase().match(/^e\d{3,4}i?i?i?/) != null || ing.id?.includes('en:e');
-              ingredientsDetailed.push({ name, isAllergen, isAdditive, percent: ing.percent_estimate });
+        rawIngredients.forEach((ing: any) => {
+          const name = (ing.text || '').replace(/_/g, '').trim();
+          if (!name) return;
+          let isAllergen = false;
+          userAllergyList.forEach(alg => {
+            if (name.toLowerCase().includes(alg.toLowerCase())) isAllergen = true;
           });
+          const isAdditive = name.toLowerCase().match(/^e\d{3,4}i?i?i?/) != null || ing.id?.includes('en:e');
+          ingredientsDetailed.push({ name, isAllergen, isAdditive, percent: ing.percent_estimate });
+        });
       } else if (p.ingredients_text) {
-          p.ingredients_text.split(/[,()]+/).forEach((ingTxt: string) => {
-              const name = ingTxt.trim().replace(/_/g, '');
-              if(!name) return;
-              let isAllergen = false;
-              userAllergyList.forEach(alg => {
-                  if (name.toLowerCase().includes(alg.toLowerCase())) isAllergen = true;
-              });
-              const isAdditive = name.toLowerCase().match(/^e\d{3,4}i?i?i?/) != null;
-              ingredientsDetailed.push({ name, isAllergen, isAdditive });
+        p.ingredients_text.split(/[,()]+/).forEach((ingTxt: string) => {
+          const name = ingTxt.trim().replace(/_/g, '');
+          if (!name) return;
+          let isAllergen = false;
+          userAllergyList.forEach(alg => {
+            if (name.toLowerCase().includes(alg.toLowerCase())) isAllergen = true;
           });
+          const isAdditive = name.toLowerCase().match(/^e\d{3,4}i?i?i?/) != null;
+          ingredientsDetailed.push({ name, isAllergen, isAdditive });
+        });
       }
 
       // We assign a mockup cost based on a hash of barcode for MVP realism
-      const mockScore = barcode.split('').reduce((a:number, b:string) => a + parseInt(b||'0'), 0);
+      const mockScore = barcode.split('').reduce((a: number, b: string) => a + parseInt(b || '0'), 0);
       const estimatedCostMAD = 5 + (mockScore % 25);
 
       // Fetch reviews from Supabase
@@ -203,15 +203,15 @@ async function startServer() {
           .select('*')
           .eq('barcode', barcode)
           .order('created_at', { ascending: false });
-        
+
         if (!error && data) {
-           fetchedReviews = data.map(r => ({
-              id: r.id,
-              user: r.user_name,
-              text: r.review_text,
-              rating: r.rating,
-              date: r.created_at
-           }));
+          fetchedReviews = data.map(r => ({
+            id: r.id,
+            user: r.user_name,
+            text: r.review_text,
+            rating: r.rating,
+            date: r.created_at
+          }));
         }
       } catch (err) {
         console.warn("Failed to fetch reviews from Supabase:", err);
@@ -240,44 +240,44 @@ async function startServer() {
 Return ONLY valid JSON matching this exact structure, with the strings translated. Do not include markdown formatting.
 JSON:
 ${JSON.stringify({
-  productName: scanResult.productName,
-  ingredients: scanResult.ingredients,
-  allergens: scanResult.allergens,
-  warnings: scanResult.warnings,
-  ingredientsDetailed: scanResult.ingredientsDetailed.map(i => i.name)
-})}`;
+            productName: scanResult.productName,
+            ingredients: scanResult.ingredients,
+            allergens: scanResult.allergens,
+            warnings: scanResult.warnings,
+            ingredientsDetailed: scanResult.ingredientsDetailed.map(i => i.name)
+          })}`;
 
           const translationRes = await ai.models.generateContent({
-             model: 'gemini-2.5-flash',
-             contents: prompt,
+            model: 'gemini-2.5-flash',
+            contents: prompt,
           });
-          
+
           const cleanJson = (translationRes.text || "").replace(/```json/g, "").replace(/```/g, "").trim();
           const translated = JSON.parse(cleanJson);
-          
+
           scanResult.productName = translated.productName || scanResult.productName;
           scanResult.ingredients = translated.ingredients || scanResult.ingredients;
           scanResult.allergens = translated.allergens || scanResult.allergens;
           scanResult.warnings = translated.warnings || scanResult.warnings;
-          
+
           if (translated.ingredientsDetailed && translated.ingredientsDetailed.length === scanResult.ingredientsDetailed.length) {
             scanResult.ingredientsDetailed.forEach((ing, i) => {
-               ing.name = translated.ingredientsDetailed[i];
+              ing.name = translated.ingredientsDetailed[i];
             });
           }
-        } catch(e: any) {
-           console.warn(`Scanner translation unavailable (${e?.status || 'API Error'}), using fallback strings.`);
+        } catch (e: any) {
+          console.warn(`Scanner translation unavailable (${e?.status || 'API Error'}), using fallback strings.`);
         }
       }
 
       if (req.body.userId) {
-         try {
-           await supabase.from('activity_history').insert({
-             user_id: req.body.userId,
-             activity_type: 'scan',
-             details: scanResult
-           });
-         } catch(e) { console.warn("History table missing or error, skipping scan history logging."); }
+        try {
+          await supabase.from('activity_history').insert({
+            user_id: req.body.userId,
+            activity_type: 'scan',
+            details: scanResult
+          });
+        } catch (e) { console.warn("History table missing or error, skipping scan history logging."); }
       }
 
       res.json(scanResult);
@@ -288,7 +288,7 @@ ${JSON.stringify({
   });
 
   // ---------------------------------------------------------
-  // ENDPOINT 2.1: Add Custom Product & AI Evaluation
+  // ENDPOINT 2.1: Ajouter un produit personnalisé et évaluation IA
   // ---------------------------------------------------------
   app.post('/api/add-custom-product', async (req, res) => {
     try {
@@ -308,11 +308,11 @@ ${JSON.stringify({
 
       let response;
       if (imageBase64 && process.env.GEMINI_API_KEY) {
-         response = await ai.models.generateContent({
+        response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
           contents: [
             prompt,
-            { inlineData: { data: imageBase64.split(',')[1] || imageBase64, mimeType: 'image/jpeg' }}
+            { inlineData: { data: imageBase64.split(',')[1] || imageBase64, mimeType: 'image/jpeg' } }
           ]
         });
       } else if (process.env.GEMINI_API_KEY) {
@@ -324,9 +324,9 @@ ${JSON.stringify({
 
       let parsedAi = { nutriscore_grade: "C", allergens_tags: [], additives_tags: [] };
       if (response && response.text) {
-          const rawText = response.text || "{}";
-          const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-          parsedAi = JSON.parse(cleanJson);
+        const rawText = response.text || "{}";
+        const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+        parsedAi = JSON.parse(cleanJson);
       }
 
       customProducts[barcode] = {
@@ -346,12 +346,12 @@ ${JSON.stringify({
   });
 
   // ---------------------------------------------------------
-  // ENDPOINT 2.2: Add Product Review
+  // ENDPOINT 2.2: Ajouter un avis sur le produit
   // ---------------------------------------------------------
   app.post('/api/product-review', async (req, res) => {
     try {
       const { barcode, user, text, rating, language = 'en' } = req.body;
-      
+
       // Save review to Supabase
       const { error: insertError } = await supabase.from('product_reviews').insert({
         barcode,
@@ -359,9 +359,9 @@ ${JSON.stringify({
         rating,
         review_text: text
       });
-      
+
       if (insertError) {
-         console.warn("Product reviews table might not be created yet, proceeding anyway:", insertError);
+        console.warn("Product reviews table might not be created yet, proceeding anyway:", insertError);
       }
 
       // Fetch all reviews for this barcode
@@ -422,32 +422,32 @@ ${JSON.stringify({
   });
 
   // ---------------------------------------------------------
-  // ENDPOINT 2.3: Scan Barcode from Image
+  // ENDPOINT 2.3: Scanner un code-barres depuis une image
   // ---------------------------------------------------------
   app.post('/api/scan-barcode-image', async (req, res) => {
     try {
       const { imageBase64 } = req.body;
       if (!process.env.GEMINI_API_KEY) throw new Error("Missing Gemini API Key");
-      
+
       const prompt = "Look very closely at the image. You will see a product, its label, or a physical barcode. Read the barcode numbers EXACTLY as printed under or near the vertical barcode lines (usually an EAN-13, EAN-8, or UPC code with 8 to 13 digits). Do not invent numbers. Return ONLY the numeric string, with NO spaces, NO markdown, NO text. If you absolutely cannot find any barcode numbers, return 'NOT_FOUND'.";
-      
+
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: [
           prompt,
-          { inlineData: { data: imageBase64.split(',')[1] || imageBase64, mimeType: 'image/jpeg' }} 
+          { inlineData: { data: imageBase64.split(',')[1] || imageBase64, mimeType: 'image/jpeg' } }
         ]
       });
-      
+
       let text = (response.text || "").trim();
       text = text.replace(/[^0-9NOT_FUD]/g, ''); // strip out markdown or random chars
-      
+
       if (text.includes('NOT_FOUND') || !text.match(/\d{8,13}/)) {
         // Fallback: If AI fails, use a mock for demonstration
         console.warn("AI didn't find barcode, generating mock");
-        return res.json({ barcode: "3017620422003" }); 
+        return res.json({ barcode: "3017620422003" });
       }
-      
+
       // Return first sequence of digits found
       const match = text.match(/\d+/);
       res.json({ barcode: match ? match[0] : text });
@@ -459,24 +459,24 @@ ${JSON.stringify({
   });
 
   // ---------------------------------------------------------
-  // ENDPOINT 3: Budget-Optimized Meal Generator (Math/Monte Carlo Emulator)
+  // ENDPOINT 3: Générateur de repas optimisé pour le budget (IA)
   // ---------------------------------------------------------
   app.post('/api/generate-meals', async (req, res) => {
     try {
       const { budgetMAD, conditions, userBiometrics, language = 'en' } = req.body;
       const baseBudget = parseFloat(budgetMAD) || 50.0;
-      
+
       let biometricsText = "";
       if (userBiometrics && (userBiometrics.age || userBiometrics.weightKg || userBiometrics.heightCm)) {
-         biometricsText = `3. Biometrics Profile for Caloric Needs: Age ${userBiometrics.age || 'N/A'}, Weight ${userBiometrics.weightKg ? userBiometrics.weightKg + 'kg' : 'N/A'}, Height ${userBiometrics.heightCm ? userBiometrics.heightCm + 'cm' : 'N/A'}. Adjust calories accordingly.`;
+        biometricsText = `3. Biometrics Profile for Caloric Needs: Age ${userBiometrics.age || 'N/A'}, Weight ${userBiometrics.weightKg ? userBiometrics.weightKg + 'kg' : 'N/A'}, Height ${userBiometrics.heightCm ? userBiometrics.heightCm + 'cm' : 'N/A'}. Adjust calories accordingly.`;
       }
-      
+
       // To simulate a Monte Carlo optimization, we request Gemini to solve the constraint algorithm.
       // We instruct Gemini to act as the mathematical optimizer building 3 meals summing strictly <= budgetMAD
       const prompt = `As a nutritional & financial optimization AI for a Moroccan health tech platform:
       Generate 3 meals (breakfast, lunch, dinner) that adhere strictly to these conditions:
       1. Mathematical Constraint: Total cost must be under exactly ${baseBudget} MAD (Moroccan Dirham).
-      2. Health Constraint: Must be healthy for a patient with these conditions: ${(conditions||[]).join(', ') || 'None'}.
+      2. Health Constraint: Must be healthy for a patient with these conditions: ${(conditions || []).join(', ') || 'None'}.
       ${biometricsText}
       The language of the response name items MUST BE in ${language}.
       
@@ -504,7 +504,7 @@ ${JSON.stringify({
         model: 'gemini-2.5-flash',
         contents: prompt
       });
-      
+
       const rawText = response.text || "{}";
       const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
       const plan = JSON.parse(cleanJson);
@@ -519,13 +519,13 @@ ${JSON.stringify({
       plan.totalCostMAD = parseFloat(computedTotal.toFixed(2));
 
       if (req.body.userId) {
-         try {
-           await supabase.from('activity_history').insert({
-             user_id: req.body.userId,
-             activity_type: 'meal',
-             details: plan
-           });
-         } catch(e) { console.warn("History table missing or error, skipping meal history logging."); }
+        try {
+          await supabase.from('activity_history').insert({
+            user_id: req.body.userId,
+            activity_type: 'meal',
+            details: plan
+          });
+        } catch (e) { console.warn("History table missing or error, skipping meal history logging."); }
       }
 
       res.json(plan);
@@ -535,28 +535,28 @@ ${JSON.stringify({
       const errMsg = error?.message || '';
       const errStr = JSON.stringify(error) || '';
       if (
-        error?.status === 503 || 
-        errMsg.includes("503") || 
-        errMsg.includes("quota") || 
+        error?.status === 503 ||
+        errMsg.includes("503") ||
+        errMsg.includes("quota") ||
         errMsg.includes("demand") ||
         errStr.includes("503") ||
         errStr.includes("UNAVAILABLE")
       ) {
-          console.log("Serving mock meal plan due to API unavailability.");
-          return res.json({
-            breakfast: [{ name: "Flocons d'avoine à l'eau", costMAD: 10, calories: 300 }],
-            lunch: [{ name: "Soupe de lentilles (Adas)", costMAD: 20, calories: 450 }],
-            dinner: [{ name: "Salade légère", costMAD: 15, calories: 250 }],
-            totalCostMAD: 45,
-            note: "Généré localement (API Indisponible : " + (error?.status || 503) + ")"
-          });
+        console.log("Serving mock meal plan due to API unavailability.");
+        return res.json({
+          breakfast: [{ name: "Flocons d'avoine à l'eau", costMAD: 10, calories: 300 }],
+          lunch: [{ name: "Soupe de lentilles (Adas)", costMAD: 20, calories: 450 }],
+          dinner: [{ name: "Salade légère", costMAD: 15, calories: 250 }],
+          totalCostMAD: 45,
+          note: "Généré localement (API Indisponible : " + (error?.status || 503) + ")"
+        });
       }
       res.status(500).json({ error: error.message || 'Failed to generate meals' });
     }
   });
 
   // ---------------------------------------------------------
-  // ENDPOINT 4: Real Notifications Endpoint
+  // ENDPOINT 4: Endpoint de notifications réelles
   // ---------------------------------------------------------
   app.post('/api/history', async (req, res) => {
     try {
@@ -573,9 +573,9 @@ ${JSON.stringify({
 
       if (error) {
         if (error.code === '42P01' || error.message?.includes('does not exist') || error.message?.includes('schema cache')) {
-           console.warn("History table not yet created in Supabase (run supabase_schema.sql). Returning empty history.");
+          console.warn("History table not yet created in Supabase (run supabase_schema.sql). Returning empty history.");
         } else {
-           console.error("History fetch error:", error.message || error);
+          console.error("History fetch error:", error.message || error);
         }
         return res.json({ scans: [], meals: [], fitness: [] });
       }
@@ -602,9 +602,9 @@ ${JSON.stringify({
       const { data: user } = await supabase.from('users').select('tokens').eq('id', userId).single();
       const { data: meds } = await supabase.from('medications').select('*').eq('user_id', userId);
       const { data: profile } = await supabase.from('medical_profiles').select('*').eq('user_id', userId).single();
-      
+
       const notifications = [];
-      
+
       // Token Notification
       if (user && user.tokens <= 2) {
         notifications.push({
@@ -629,7 +629,7 @@ ${JSON.stringify({
 
       // Medical Profile Notification
       if (!profile || (!profile.allergies?.length && !profile.conditions?.length)) {
-         notifications.push({
+        notifications.push({
           id: 'missing_profile',
           title: 'Profil Médical Incomplet',
           message: `Veuillez remplir vos conditions médicales dans l'onglet Santé.`,
@@ -639,11 +639,11 @@ ${JSON.stringify({
       }
 
       notifications.push({
-         id: 'system_active',
-         title: 'Système Actif',
-         message: 'Connexion établie. Assistant prêt.',
-         time: 'Récemment',
-         isRead: false
+        id: 'system_active',
+        title: 'Système Actif',
+        message: 'Connexion établie. Assistant prêt.',
+        time: 'Récemment',
+        isRead: false
       });
 
       res.json({ status: "success", notifications });
@@ -654,13 +654,13 @@ ${JSON.stringify({
   });
 
   // ---------------------------------------------------------
-  // ENDPOINT 5: Smart Fitness Generator via AI
+  // ENDPOINT 5: Générateur de fitness intelligent (IA)
   // ---------------------------------------------------------
   app.post('/api/generate-fitness', async (req, res) => {
     try {
       const { user, medicalProfile, language = 'en' } = req.body;
       const { weightKg, heightCm, fitnessGoal } = user || {};
-      
+
       let bmi = null;
       if (weightKg && heightCm) {
         bmi = (weightKg / Math.pow(heightCm / 100, 2)).toFixed(1);
@@ -696,20 +696,20 @@ ${JSON.stringify({
         model: 'gemini-2.5-flash',
         contents: prompt
       });
-      
+
       const rawText = response.text || "{}";
       const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
       const plan = JSON.parse(cleanJson);
-      
+
       const userId = req.body.user?.id;
       if (userId) {
-         try {
-           await supabase.from('activity_history').insert({
-             user_id: userId,
-             activity_type: 'fitness',
-             details: plan
-           });
-         } catch(e) { console.warn("History table missing or error, skipping fitness history logging."); }
+        try {
+          await supabase.from('activity_history').insert({
+            user_id: userId,
+            activity_type: 'fitness',
+            details: plan
+          });
+        } catch (e) { console.warn("History table missing or error, skipping fitness history logging."); }
       }
 
       res.json(plan);
@@ -718,20 +718,20 @@ ${JSON.stringify({
       const errMsg = error?.message || '';
       const errStr = JSON.stringify(error) || '';
       if (
-        error?.status === 503 || 
-        errMsg.includes("503") || 
-        errMsg.includes("quota") || 
+        error?.status === 503 ||
+        errMsg.includes("503") ||
+        errMsg.includes("quota") ||
         errMsg.includes("demand") ||
         errStr.includes("503") ||
         errStr.includes("UNAVAILABLE")
       ) {
-          return res.json({
-            exercises: [
-              { name: "Marche active", duration: 15, intensity: "Low (Faible)" },
-              { name: "Étirements légers", duration: 10, intensity: "Low (Faible)" }
-            ],
-            note: "API Indisponible - utilisation d'exercices de base sécurisés."
-          });
+        return res.json({
+          exercises: [
+            { name: "Marche active", duration: 15, intensity: "Low (Faible)" },
+            { name: "Étirements légers", duration: 10, intensity: "Low (Faible)" }
+          ],
+          note: "API Indisponible - utilisation d'exercices de base sécurisés."
+        });
       }
       res.status(500).json({ error: error.message || 'Failed to generate fitness plan' });
     }
@@ -744,23 +744,23 @@ ${JSON.stringify({
     try {
       const { tokens, priceMAD, origin } = req.body;
       const stripeKey = process.env.STRIPE_SECRET_KEY;
-      
+
       if (!stripeKey) {
         return res.status(500).json({ error: "Clé secrète Stripe non configurée (STRIPE_SECRET_KEY)" });
       }
 
       const stripeClient = new Stripe(stripeKey);
-      
+
       let baseUrl = origin;
       if (!baseUrl || baseUrl.includes('localhost')) {
-         const referer = req.headers.referer;
-         if (referer) {
-            baseUrl = new URL(referer).origin;
-         } else {
-            const host = req.headers['x-forwarded-host'] || req.headers.host;
-            const proto = req.headers['x-forwarded-proto'] || req.protocol;
-            baseUrl = `${proto}://${host}`;
-         }
+        const referer = req.headers.referer;
+        if (referer) {
+          baseUrl = new URL(referer).origin;
+        } else {
+          const host = req.headers['x-forwarded-host'] || req.headers.host;
+          const proto = req.headers['x-forwarded-proto'] || req.protocol;
+          baseUrl = `${proto}://${host}`;
+        }
       }
 
       const session = await stripeClient.checkout.sessions.create({

@@ -2,8 +2,8 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/:match*",
-      "destination": "https://amtawa-1.onrender.com/:match*"
+      "source": "/api/(.*)",
+      "destination": "https://amtawa-1.onrender.com/$1"
     },
     {
       "source": "/(.*)",
