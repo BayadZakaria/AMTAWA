@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Amtawa Logos</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      margin: 0;
+    }
+    h1 {
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    p {
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+    .logo-container {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 40px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 800px;
+      width: 100%;
+    }
+    .preview {
+      width: 100%;
+      max-width: 400px;
+      border: 1px solid #f1f5f9;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .preview svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      background: #7e22ce;
+      color: #ffffff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #6b21a8;
+    }
+    .btn-outline {
+      background: transparent;
+      color: #7e22ce;
+      border: 2px solid #7e22ce;
+    }
+    .btn-outline:hover {
+      background: #faf5ff;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Amtawa Brand Assets</h1>
+  <p>Téléchargez vos logos avec le Stéthoscope en haute résolution (Qualité 8K)</p>
+
+  <!-- Logo 1: A Only -->
+  <div class="logo-container">
+    <h2>1. Le "A" + Stéthoscope (Flat Mauve)</h2>
+    <div class="preview" id="preview-1" style="background: #ffffff">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" id="svg-a-stetho">
+        <rect width="100" height="100" fill="#ffffff" />
+        <g fill="none" stroke="#a855f7" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Letter A -->
+          <path d="M 28 85 L 50 15 L 72 85" />
+          <!-- Stethoscope -->
+          <path d="M 90 18 C 90 28, 85 32, 80 38 L 80 50 C 80 58, 75 58, 65 58 L 35 58 C 20 58, 12 62, 12 72 C 12 82, 18 85, 25 85" stroke-width="5" />
+          <path d="M 70 18 C 70 28, 75 32, 80 38" stroke-width="5" />
+          <!-- Earpieces -->
+          <circle cx="90" cy="15" r="2.5" fill="#a855f7" stroke="none" />
+          <circle cx="70" cy="15" r="2.5" fill="#a855f7" stroke="none" />
+          <!-- Chest piece -->
+          <circle cx="31" cy="85" r="5" stroke-width="3" />
+          <circle cx="31" cy="85" r="1.5" fill="#a855f7" stroke="none" />
+        </g>
+      </svg>
+    </div>
+    <div class="actions">
+      <!-- To download png, we give background color explicitly in SVG to make it white/purple -->
+      <button onclick="downloadPNGWithBackground('svg-a-stetho', 'Amtawa_Logo_Icon_8K.png', 7680, 7680, '#ffffff')">Télécharger en PNG (8K)</button>
+      <button class="btn-outline" onclick="downloadSVG('svg-a-stetho', 'Amtawa_Logo_Icon.svg')">Télécharger en SVG</button>
+    </div>
+  </div>
+
+  <!-- Logo 2: A with Mtawa -->
+  <div class="logo-container">
+    <h2>2. Le "A" + Stéthoscope avec "Mtawa"</h2>
+    <div class="preview" id="preview-2" style="max-width: 600px; background: #ffffff">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 150" id="svg-a-mtawa-stetho">
+        <rect width="350" height="150" fill="#ffffff" />
+        
+        <g transform="translate(25, 25)">
+          <g fill="none" stroke="#a855f7" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Letter A -->
+            <path d="M 28 85 L 50 15 L 72 85" />
+            <!-- Stethoscope -->
+            <path d="M 90 18 C 90 28, 85 32, 80 38 L 80 50 C 80 58, 75 58, 65 58 L 35 58 C 20 58, 12 62, 12 72 C 12 82, 18 85, 25 85" stroke-width="5" />
+            <path d="M 70 18 C 70 28, 75 32, 80 38" stroke-width="5" />
+            <!-- Earpieces -->
+            <circle cx="90" cy="15" r="2.5" fill="#a855f7" stroke="none" />
+            <circle cx="70" cy="15" r="2.5" fill="#a855f7" stroke="none" />
+            <!-- Chest piece -->
+            <circle cx="31" cy="85" r="5" stroke-width="3" />
+            <circle cx="31" cy="85" r="1.5" fill="#a855f7" stroke="none" />
+          </g>
+        </g>
+        
+        <!-- Text -->
+        <text x="145" y="105" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="64" fill="#1e293b" letter-spacing="-2">Mtawa</text>
+      </svg>
+    </div>
+    <div class="actions">
+      <button onclick="downloadPNGWithBackground('svg-a-mtawa-stetho', 'Amtawa_Logo_Full_8K.png', 7680, 3291, '#ffffff')">Télécharger en PNG (8K)</button>
+      <button class="btn-outline" onclick="downloadSVG('svg-a-mtawa-stetho', 'Amtawa_Logo_Full.svg')">Télécharger en SVG</button>
+    </div>
+  </div>
+
+  <script>
+    function downloadSVG(svgId, filename) {
+      const svg = document.getElementById(svgId);
+      const serializer = new XMLSerializer();
+      let source = serializer.serializeToString(svg);
+      if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+          source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+      }
+      if(!source.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)){
+          source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+      }
+      source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
+      const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+      
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function downloadPNGWithBackground(svgId, filename, width, height, bgColor) {
+      const svg = document.getElementById(svgId);
+      const serializer = new XMLSerializer();
+      let source = serializer.serializeToString(svg);
+      
+      const img = new Image();
+      const svgBlob = new Blob([source], {type: "image/svg+xml;charset=utf-8"});
+      const url = URL.createObjectURL(svgBlob);
+      
+      img.onload = function() {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        
+        // Draw background
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, width, height);
+        
+        // Draw image
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        
+        const imgURI = canvas.toDataURL("image/png");
+        
+        const link = document.createElement("a");
+        link.href = imgURI;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+      
+      img.src = url;
+    }
+  </script>
+</body>
+</html>

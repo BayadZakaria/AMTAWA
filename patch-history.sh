@@ -1,0 +1,1 @@
+sed -i 's/import { translations, Language } from '\''..\/translations'\'';/import { translations, Language } from '\''..\/translations'\'';\nimport { supabase } from '\''..\/lib\/supabase'\'';/g' src/components/History.tsx

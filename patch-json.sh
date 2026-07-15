@@ -1,0 +1,3 @@
+sed -i 's/const data = await response.json();/const _text = await response.text();\n      let data;\n      try { data = JSON.parse(_text); } catch(e) { throw new Error(_text.slice(0, 50)); }/g' src/components/TokenStore.tsx src/components/MealDisplay.tsx src/components/Scanner.tsx
+sed -i 's/const data = await res.json();/const _text = await res.text();\n      let data;\n      try { data = JSON.parse(_text); } catch(e) { throw new Error(_text.slice(0, 50)); }/g' src/components/History.tsx src/components/Fitness.tsx src/components/Scanner.tsx
+sed -i 's/const notifData = await notifRes.json();/const _text = await notifRes.text();\n          let notifData;\n          try { notifData = JSON.parse(_text); } catch(e) { throw new Error(_text.slice(0, 50)); }/g' src/App.tsx

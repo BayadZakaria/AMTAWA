@@ -1,0 +1,2 @@
+sed -i 's/const offData = await offResponse.json();/const _offText = await offResponse.text(); let offData; try { offData = JSON.parse(_offText); } catch(e) { throw new Error("Invalid OFF response"); }/g' server.ts
+sed -i 's/const data = await response.json();/const _dataText = await response.text(); let data; try { data = JSON.parse(_dataText); } catch(e) { throw new Error("Invalid API response"); }/g' server.ts

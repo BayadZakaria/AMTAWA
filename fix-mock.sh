@@ -1,0 +1,1 @@
+sed -i 's/url: `${baseUrl}\/?success=truereturn res.status(500).json({ error: "Clé secrète Stripe non configurée (STRIPE_SECRET_KEY)" });purchased_tokens=${tokens}`/url: `${baseUrl}\/?success=true\&purchased_tokens=${tokens}`/g' server.ts
