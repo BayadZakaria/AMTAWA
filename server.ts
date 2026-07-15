@@ -738,12 +738,12 @@ ${JSON.stringify({
   // ---------------------------------------------------------
   app.post('/api/product-review', async (req, res) => {
     try {
-      const { barcode, user, text, rating, language = 'en' } = req.body;
+      const { barcode, user, user_name, text, rating, language = 'en' } = req.body;
       
       // Save review to Supabase
       const { error: insertError } = await supabase.from('product_reviews').insert({
         barcode,
-        user_name: user || 'Anonymous',
+        user_name: user_name || user || 'Anonymous',
         rating,
         review_text: text
       });
@@ -771,7 +771,7 @@ ${JSON.stringify({
       } else {
         // Fallback to memory if supabase fails/table not exist
         if (!productReviews[barcode]) productReviews[barcode] = [];
-        productReviews[barcode].push({ id: Date.now(), user: user || 'Anonymous', text, rating, date: new Date().toISOString() });
+        productReviews[barcode].push({ id: Date.now(), user: user_name || user || 'Anonymous', text, rating, date: new Date().toISOString() });
         newReviews = productReviews[barcode];
       }
 
