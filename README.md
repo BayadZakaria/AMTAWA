@@ -42,3 +42,39 @@ The system is built on a decoupled "Fortress" architecture:
 ```bash
 git clone [https://github.com/YOUR-USERNAME/amtawa.git](https://github.com/YOUR-USERNAME/amtawa.git)
 cd amtawa
+2. Setup the Backend (FastAPI)
+
+Bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+Create a .env file in the backend/ directory:
+
+Extrait de code
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+OLLAMA_HOST=http://localhost:11434
+STRIPE_SECRET_KEY=your_stripe_key
+Run the backend:
+
+Bash
+uvicorn main:app --reload --port 8000
+3. Setup the Frontend (React.js)
+
+Bash
+cd ../frontend
+npm install
+npm run dev
+🔒 Security
+Data Sovereignty: Compliant with strict data protection guidelines (e.g., CNDP Law 09-08).
+
+PCI-DSS: No credit card data is stored on our servers; all transactions are securely offloaded to Stripe.
+
+👨‍💻 Author
+Zakaria BAYAD
+
+Etudient : SupRH
+Project Type: End of Studies Project (MVP)
+
+Built with passion and local intelligence.
